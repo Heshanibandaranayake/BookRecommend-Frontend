@@ -41,8 +41,35 @@
       };
     },
     methods: {
-      handleSignup() {
-        alert(`Signed up with: ${this.name}, ${this.email}`);
+      async handleSignup() {
+        try {
+          const response = await fetch("http://localhost:5000/api/auth/signup", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: this.name,
+              email: this.email,
+              password: this.password,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            // Notify the user of successful signup
+            alert("Signup successful! You can now log in.");
+            // Redirect to the login page
+            this.$router.push("/");
+          } else {
+            // Handle errors from the backend
+            alert(data.message || "Signup failed.");
+          }
+        } catch (error) {
+          console.error("Error during signup:", error);
+          alert("An error occurred. Please try again later.");
+        }
       },
     },
   };

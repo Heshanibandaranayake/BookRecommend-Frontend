@@ -27,8 +27,27 @@
       };
     },
     methods: {
-      handleLogin() {
-        alert(`Logged in with: ${this.email}`);
+      async handleLogin() {
+        try {
+          const response = await fetch("http://localhost:5000/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: this.email, password: this.password }),
+          });
+          //console.log()
+          const data = await response.json();
+          console.log("reponse",response);
+          if (response.ok) {
+            alert("Login successful");
+            sessionStorage.setItem("username",this.email)
+            //console.log(data.token); // Use this token for further requests
+            this.$router.push("/bookindex");
+          } else {
+            alert(data.message);
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        }
       },
     },
   };
