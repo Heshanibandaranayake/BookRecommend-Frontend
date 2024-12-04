@@ -36,10 +36,11 @@
           });
           //console.log()
           const data = await response.json();
-          console.log("reponse",response);
-          if (response.ok) {
+          console.log("reponse",data);
+          if (response.status == 200) {
             alert("Login successful");
-            sessionStorage.setItem("username",this.email)
+            sessionStorage.setItem("username",data.username)
+            sessionStorage.setItem("userId", data.user)
             //console.log(data.token); // Use this token for further requests
             this.$router.push("/bookindex");
           } else {
