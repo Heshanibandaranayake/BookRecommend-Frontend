@@ -4,7 +4,7 @@
       <header class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="text-primary">Book Recommendations</h1>
         <div class="d-flex align-items-center">
-         <i class="fas fa-user" ></i>
+         <i class="fas fa-user" ></i>&nbsp;&nbsp;&nbsp;
           <span class="fs-5">{{ username }}</span>&nbsp;&nbsp;&nbsp;
           <button class="btn btn-outline-secondary btn-sm ms-2" @click="logout">
             Logout
@@ -73,7 +73,6 @@
                 </div>
             </div>
         </div>
-        
         <div v-if="libraryBooks.length" class="row">
             <div class="col-lg-12">
                 <div class="d-flex col-12">
@@ -96,7 +95,7 @@
                         <p class="card-text mb-1"><strong>Author:</strong> {{ book.author }}</p>
                         <p class="card-text"><strong>Category:</strong> {{ book.category }}</p>
 
-                        <button v-if="!book.review" class="btn btn-primary" @click="selectBook(book)"><i class="fas fa-comment-alt"></i> </button>
+                        <button v-if="!book.review" class="btn btn-success" @click="selectBook(book)"><i class="fas fa-comment-alt"></i> </button>
                         <div v-if="selectedBook && selectedBook.id === book.id && !book.review">
                             <textarea v-model="reviewText" class="form-control" id="reviewText" rows="4" placeholder="Type your review here..."></textarea>
                             <button class="btn btn-success mt-2" @click="submitReview">Submit Review</button>
@@ -131,7 +130,30 @@
                 </div>
             </div> -->
         </div>
-        
+        <div v-if="allBooks.length" class="row">
+            <div class="d-flex col-12">
+                <h4 class="text-primary">All Books</h4>
+            </div>
+            <div class="library-scroll-container d-flex overflow-auto">
+                <div class="col-md-4 col-lg-3 mb-3 mt-3" v-for="(book, index) in allBooks" :key="index">
+                    <div class="card h-100 ">
+                        <img
+                            :src="book.cover_image"
+                            class="card-img-top"
+                            alt="Book Cover"
+                            style="height: 300px; object-fit: cover"
+                            @click="openReviewModal(book)"/>
+                        <div class="card-body">
+                        <h5 class="card-title">{{ book.title }}</h5>
+                        <p class="card-text mb-1"><strong>Author:</strong> {{ book.author }}</p>
+                        <p class="card-text"><strong>Category:</strong> {{ book.category }}</p>
+                        <button class="btn btn-success" @click="openReviewModal(book)"><i class="fas fa-comment-alt"></i></button>
+                        <button class="btn btn-primary mt-2" @click="addToLibrary(book.id)">Add to Library</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
       </div>
       <div class="row">
         
@@ -151,20 +173,21 @@
     },
     data() {
       return {
-        username: sessionStorage.getItem("username"), // Replace with actual username logic
+        username: sessionStorage.getItem("username"), 
+        userId:sessionStorage.getItem("userId"),
         searchQuery: "",
-        books: [], // Holds the search results
+        books: [], 
         libraryBooks:[],
         searchTitle:"",
         searchAuthor:"",
         searchCategory:"",
-        query: '', // User input for search
-        recommendations: [], // Array to store recommendation results
-        loading: false, // Loading state
+        query: '', 
+        recommendations: [],
+        loading: false, 
         error: null, 
         showModal: false,
         selectedBook: [],
-        userId: 1
+        allBooks:[]
       };
     },
     methods: {
@@ -188,6 +211,7 @@
         this.$router.push('/');
       },
       async searchBooks() {
+        
         const searchParams = {
         title: this.searchTitle,  // Bind these to your input fields
         author: this.searchAuthor,
@@ -195,7 +219,8 @@
         };
 
         try {
-            const response = await axios.get(Config.API+'/search-books', { params: searchParams });
+            const response = await axios.post(Config.API+`/book/${this.userId}`, {'command':'searchbook',params:searchParams});
+            
             console.log("books",response);
             this.books = response.data;  // Store search results in your component
         } catch (error) {
@@ -204,19 +229,23 @@
       },
       async fetchUserLibrary() {
         try {
-        const userId = 1; 
-        const response = await axios.get(Config.API+`/user-library/${userId}`);
+        const userId = this.userId;
+        console.log("userId",this.userId);
+        const response = await axios.post(Config.API+`/book/${userId}`, {'command':'listbook'});
         this.libraryBooks = response.data;
         } catch (error) {
         console.error("Error fetching user library:", error);
         }
     },
-    async addToLibrary() {
+    async addToLibrary(bookId) {
       try {
-        const userId = 1; 
-        const channelId = 1313008653778948146;
-        const response = await axios.post(Config.API+`/add-to-library/${userId}`, {channelId});
-        alert('Book added to your library!');
+        
+        //const channelId = 1313008653778948146;
+        const response = await axios.post(Config.API+`/book/${this.userId}`, {'command':'addbook',bookId});
+        console.log("reponse",response);
+        if(response.status == 200){
+          alert(response.data.message);
+        }
         console.log("response",response);
       } catch (error) {
         console.error('Error adding book to library:', error);
@@ -248,7 +277,7 @@
       const reviewText = this.reviewText.trim();
 
    
-    await axios.post(Config.API+`/reviews?`+bookId, { review: reviewText })
+    await axios.post(Config.API+`/reviews/${this.userId}`, { command:'addreview',bookId:bookId,review: reviewText })
         .then((response) => {
         if (response.data.success) {
             this.reviewText = ""; 
@@ -266,15 +295,14 @@
       alert("Review submitted successfully!");
     },
     async removeFromLibrary(bookId) {
-        let userId = 1;
         //let data = {"bookId":bookId}
-        await axios.delete(Config.API+`/library?userId=`+userId+ `&bookId=`+bookId)
+        await axios.post(Config.API+`/book/${this.userId}`, {'command':'deletebook',bookId})
         .then(response => {
         if (response.data.success) {
             alert(response.data.message); 
             this.libraryBooks = this.libraryBooks.filter(book => book.id !== bookId);
         } else {
-            alert(response.data.message); // Display message if book not found
+            alert(response.data.message); 
         }
         })
         .catch(error => {
@@ -282,13 +310,28 @@
         alert('Failed to remove the book. Please try again later.');
         });
     },
-    },
-    mounted() {
-        this.fetchUserLibrary();
-        this.fetchRecommendations();
+    
+    async getBooks(){
+      try {
+        const response = await axios.get(Config.API+`/allbooks`);
+        console.log('Books:', response.data);
+        this.allBooks = response.data
+      } catch (error) {
+        console.error('Error fetching books:', error.response?.data || error.message);
+        return [];
+      }
+
     },
     
-  };
+  },
+  mounted() {
+      this.getBooks()
+        this.fetchUserLibrary();
+        this.fetchRecommendations();
+        
+    },
+}
+    
   </script>
   
   <style scoped>
