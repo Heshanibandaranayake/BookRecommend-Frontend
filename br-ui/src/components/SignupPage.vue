@@ -2,10 +2,8 @@
     <div class="auth-container">
       <h2>Signup</h2>
       <div class="row">
-        <div class="col-6">
-
-        </div>
-        <div class="col-6">
+        
+        <div class="col-12">
           <form @submit.prevent="handleSignup">
             <div class="form-group">
               <label for="name">Name:</label>
@@ -19,11 +17,11 @@
               <label for="password">Password:</label>
               <input type="password" id="password" v-model="password" required />
             </div>
-            <div class="form-group">
-              <label for="password">Confirm Password:</label>
-              <input type="password" id="password" v-model="password" required />
-            </div>
+            
             <button type="submit">Sign up</button>
+            <p class="signup-caption">
+            Already a member? <router-link to="/">Login here</router-link>
+          </p>
           </form>
         </div>
       </div>
